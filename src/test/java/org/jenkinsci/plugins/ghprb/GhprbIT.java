@@ -50,7 +50,7 @@ public class GhprbIT extends GhprbITBaseTestCase {
         GhprbTrigger trigger = GhprbTestUtil.getTrigger(null);
         given(commitPointer.getSha()).willReturn("sha");
         GhprbTestUtil.setupGhprbTriggerDescriptor(null);
-        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard"));
+        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard", "/some/path"));
         given(ghPullRequest.getNumber()).willReturn(1);
 
         // Creating spy on ghprb, configuring repo
@@ -81,7 +81,7 @@ public class GhprbIT extends GhprbITBaseTestCase {
         given(commitPointer.getSha()).willReturn("sha").willReturn("sha").willReturn("newOne").willReturn("newOne");
         given(ghPullRequest.getComments()).willReturn(Lists.<GHIssueComment> newArrayList());
         GhprbTestUtil.setupGhprbTriggerDescriptor(null);
-        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard"));
+        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard", "/some/path"));
         given(ghPullRequest.getNumber()).willReturn(2).willReturn(2).willReturn(3).willReturn(3);
         Ghprb ghprb = spy(trigger.createGhprb(project));
         doReturn(ghprbGitHub).when(ghprb).getGitHub();
@@ -112,7 +112,7 @@ public class GhprbIT extends GhprbITBaseTestCase {
         given(ghPullRequest.getComments()).willReturn(newArrayList(comment));
         given(ghPullRequest.getNumber()).willReturn(5).willReturn(5);
         GhprbTestUtil.setupGhprbTriggerDescriptor(null);
-        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard"));
+        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard", "/some/path"));
 
         Ghprb ghprb = spy(trigger.createGhprb(project));
         doReturn(ghprbGitHub).when(ghprb).getGitHub();
@@ -143,7 +143,7 @@ public class GhprbIT extends GhprbITBaseTestCase {
         given(ghPullRequest.getComments()).willReturn(newArrayList(comment));
         given(ghPullRequest.getNumber()).willReturn(5);
         GhprbTestUtil.setupGhprbTriggerDescriptor(null);
-        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard"));
+        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard", "/some/path"));
 
         Ghprb ghprb = spy(trigger.createGhprb(project));
         doReturn(ghprbGitHub).when(ghprb).getGitHub();

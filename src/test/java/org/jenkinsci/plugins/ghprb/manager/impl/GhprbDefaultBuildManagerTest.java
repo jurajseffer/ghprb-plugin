@@ -70,7 +70,7 @@ public class GhprbDefaultBuildManagerTest extends GhprbITBaseTestCase {
         GhprbTestUtil.setupGhprbTriggerDescriptor(config);
 
 
-        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard"));
+        project.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard", "/some/path"));
 
         given(ghPullRequest.getNumber()).willReturn(1);
 

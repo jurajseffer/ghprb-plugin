@@ -14,6 +14,8 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.github.GHEventPayload.IssueComment;
 import org.kohsuke.github.GHEventPayload.PullRequest;
 import org.kohsuke.github.GitHub;
+import org.kohsuke.github.GHRepository;
+import hudson.model.AbstractProject;
 
 public class GhprbWebHook {
     private static final Logger logger = Logger.getLogger(GhprbWebHook.class.getName());
@@ -42,6 +44,14 @@ public class GhprbWebHook {
         } else {
             return "NOT STARTED";
         }
+    }
+
+    public AbstractProject getProject() {
+        return trigger.getActualProject();
+    }
+
+    public GHRepository getGHRepository() {
+        return trigger.getRepository().getGitHubRepo();
     }
 
     public void handleComment(IssueComment issueComment) throws IOException {

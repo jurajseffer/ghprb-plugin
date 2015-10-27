@@ -107,7 +107,7 @@ public class BuildFlowBuildManagerTest extends GhprbITBaseTestCase {
         given(commitPointer.getSha()).willReturn("sha");
         GhprbTestUtil.setupGhprbTriggerDescriptor(null);
 
-        buildFlowProject.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard"));
+        buildFlowProject.addProperty(new GithubProjectProperty("https://github.com/user/dropwizard", "/some/path"));
 
         given(ghPullRequest.getNumber()).willReturn(1);
 

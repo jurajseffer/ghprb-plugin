@@ -122,7 +122,7 @@ public class GhprbPullRequestMergeTest {
         Mockito.doReturn(pr).when(repo).getPullRequest(pullId);
         
         
-        GithubProjectProperty projectProperty = new GithubProjectProperty("https://github.com/jenkinsci/ghprb-plugin");
+        GithubProjectProperty projectProperty = new GithubProjectProperty("https://github.com/jenkinsci/ghprb-plugin", "/some/path");
         DescriptorImpl descriptor = trigger.getDescriptor();
 
         PrintStream logger = mock(PrintStream.class);

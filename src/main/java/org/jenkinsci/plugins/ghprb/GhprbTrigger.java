@@ -252,7 +252,7 @@ public class GhprbTrigger extends GhprbTriggerBackwardsCompatible {
     public QueueTaskFuture<?> startJob(GhprbCause cause, GhprbRepository repo) {
         ArrayList<ParameterValue> values = getDefaultParameters();
         final String commitSha = cause.isMerged() ? "origin/pr/" + cause.getPullID() + "/merge" : cause.getCommit();
-        values.add(new StringParameterValue("sha1", commitSha));
+        values.add(new StringParameterValue("sha1", cause.getCommit()));
         values.add(new StringParameterValue("ghprbActualCommit", cause.getCommit()));
         String triggerAuthor = "";
         String triggerAuthorEmail = "";

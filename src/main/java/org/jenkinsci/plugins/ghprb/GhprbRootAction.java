@@ -32,6 +32,7 @@ import java.net.URLDecoder;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -98,10 +99,10 @@ public class GhprbRootAction implements UnprotectedRootAction {
         }
 
         logger.log(Level.FINE, "Got payload event: {0}", event);
-        
+
         try {
             GitHub gh = GitHub.connectAnonymously();
-            
+
             if ("issue_comment".equals(event)) {
                 IssueComment issueComment = getIssueComment(payload, gh);
                 GHIssueState state = issueComment.getIssue().getState();
@@ -109,7 +110,7 @@ public class GhprbRootAction implements UnprotectedRootAction {
                     logger.log(Level.INFO, "Skip comment on closed PR");
                     return;
                 }
-                
+
                 String repoName = issueComment.getRepository().getFullName();
 
                 logger.log(Level.INFO, "Checking issue comment ''{0}'' for repo {1}", new Object[] { issueComment.getComment(), repoName });
@@ -131,18 +132,28 @@ public class GhprbRootAction implements UnprotectedRootAction {
 
                 logger.log(Level.INFO, "Checking PR #{1} for {0}", new Object[] { repoName, pr.getNumber() });
 
+                Boolean filesLoaded = false;
+                List<File> allFiles = new ArrayList();
                 for (GhprbWebHook webHook : getWebHooks()) {
                     try {
                         if (webHook.matchRepo(repoName) && webHook.checkSignature(body, signature)) {
                             PullRequest authedPr = getPullRequest(payload, webHook.getGitHub());
                             AbstractProject<?, ?> job = webHook.getProject();
+                            if (filesLoaded == false) {
+                              try {
+                                allFiles = getPRFiles(authedPr, webHook);
+                                filesLoaded = true;
+                              } catch (Exception e) {
+                                  logger.log(Level.SEVERE, "Unable to fetch PR files for " + webHook.getProjectName(), e);
+                              }
+                            }
                             if (job.getProperty(GithubProjectProperty.class) == null
                                 || (job.getProperty(GithubProjectProperty.class) != null
                                     && (job.getProperty(GithubProjectProperty.class).getRepositoryPath() == null
                                     || job.getProperty(GithubProjectProperty.class).getRepositoryPath() == "")
                                 )
                                 || checkCommitPaths(job.getProperty(GithubProjectProperty.class)
-                                    .getRepositoryPath(), authedPr, webHook)) {
+                                    .getRepositoryPath(), allFiles)) {
                                 logger.log(Level.INFO, "Matched PR commits paths for : " + webHook.getProjectName());
                                 webHook.handlePR(authedPr);
                             }
@@ -160,34 +171,40 @@ public class GhprbRootAction implements UnprotectedRootAction {
         }
     }
 
-    private boolean checkCommitPaths(String repositoryPath, PullRequest pullRequest, GhprbWebHook webHook)
+    private List<File> getPRFiles(PullRequest pullRequest, GhprbWebHook webHook)
         throws IOException
     {
-        GHRepository ghRepo = webHook.getGHRepository();
-        GHPullRequest pr = pullRequest.getPullRequest();
-        List<GHPullRequestCommitDetail> commits = pr.listCommits().asList();
-        for (int i = 0, size = commits.size(); i < size; i++) {
-            GHPullRequestCommitDetail commitDetail = commits.get(i);
-            GHCommit ghCommit = ghRepo.getCommit(commitDetail.getSha());
-            List<File> files = ghCommit.getFiles();
-            for (int j = 0, sizeFile = files.size(); j < sizeFile; j++) {
-                File file = files.get(j);
-                logger.log(Level.INFO, "PR file path: " + file.getFileName()
-                        + ", repositoryPath: " + repositoryPath);
-                if (file.getFileName().startsWith(repositoryPath)) {
-                    return true;
-                }
-            }
+      GHRepository ghRepo = webHook.getGHRepository();
+      GHPullRequest pr = pullRequest.getPullRequest();
+      List<GHPullRequestCommitDetail> commits = pr.listCommits().asList();
+      ArrayList<File> allFiles = new ArrayList();
+      for (int i = 0, size = commits.size(); i < size; i++) {
+          GHPullRequestCommitDetail commitDetail = commits.get(i);
+          GHCommit ghCommit = ghRepo.getCommit(commitDetail.getSha());
+          List<File> files = ghCommit.getFiles();
+          allFiles.addAll(files);
+      }
+
+      return allFiles;
+    }
+
+    private boolean checkCommitPaths(String repositoryPath, List<File> allFiles)
+    {
+        for (int j = 0, sizeFile = allFiles.size(); j < sizeFile; j++) {
+          File file = allFiles.get(j);
+          if (file.getFileName().startsWith(repositoryPath)) {
+            return true;
+          }
         }
 
         return false;
     }
-    
+
     private PullRequest getPullRequest(String payload, GitHub gh) throws IOException {
         PullRequest pr = gh.parseEventPayload(new StringReader(payload), PullRequest.class);
         return pr;
     }
-    
+
     private IssueComment getIssueComment(String payload, GitHub gh) throws IOException {
         IssueComment issueComment = gh.parseEventPayload(new StringReader(payload), IssueComment.class);
         return issueComment;
@@ -207,7 +224,7 @@ public class GhprbRootAction implements UnprotectedRootAction {
         return body;
     }
 
-    
+
     private Set<GhprbWebHook> getWebHooks() {
         final Set<GhprbWebHook> webHooks = new HashSet<GhprbWebHook>();
 

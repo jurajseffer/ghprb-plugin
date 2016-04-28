@@ -19,9 +19,11 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHPullRequest;
+import org.kohsuke.github.GHCompare;
 import org.kohsuke.github.GHCommit;
 import org.kohsuke.github.GHCommit.File;
 import org.kohsuke.github.GHPullRequestCommitDetail;
+import org.kohsuke.github.GHCommit.File;
 import com.coravy.hudson.plugins.github.GithubProjectProperty;
 
 import java.io.BufferedReader;
@@ -35,6 +37,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Arrays;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -138,6 +141,7 @@ public class GhprbRootAction implements UnprotectedRootAction {
                     try {
                         if (webHook.matchRepo(repoName) && webHook.checkSignature(body, signature)) {
                             PullRequest authedPr = getPullRequest(payload, webHook.getGitHub());
+                            logger.log(Level.INFO, "Head: " + authedPr.getPullRequest().getHead().getSha() + ", base: " + authedPr.getPullRequest().getBase().getSha());
                             AbstractProject<?, ?> job = webHook.getProject();
                             if (filesLoaded == false) {
                               try {
@@ -154,12 +158,12 @@ public class GhprbRootAction implements UnprotectedRootAction {
                                 )
                                 || checkCommitPaths(job.getProperty(GithubProjectProperty.class)
                                     .getRepositoryPath(), allFiles)) {
-                                logger.log(Level.INFO, "Matched PR commits paths for : " + webHook.getProjectName());
+                                logger.log(Level.INFO, "Matched PR commits paths for " + webHook.getProjectName());
                                 webHook.handlePR(authedPr);
                             }
                         }
                     } catch (Exception e) {
-                        logger.log(Level.SEVERE, "Unable to process web hook for: " + webHook.getProjectName(), e);
+                        logger.log(Level.SEVERE, "Unable to process web hook for " + webHook.getProjectName(), e);
                     }
                 }
             } else {
@@ -176,16 +180,11 @@ public class GhprbRootAction implements UnprotectedRootAction {
     {
       GHRepository ghRepo = webHook.getGHRepository();
       GHPullRequest pr = pullRequest.getPullRequest();
-      List<GHPullRequestCommitDetail> commits = pr.listCommits().asList();
-      ArrayList<File> allFiles = new ArrayList();
-      for (int i = 0, size = commits.size(); i < size; i++) {
-          GHPullRequestCommitDetail commitDetail = commits.get(i);
-          GHCommit ghCommit = ghRepo.getCommit(commitDetail.getSha());
-          List<File> files = ghCommit.getFiles();
-          allFiles.addAll(files);
-      }
+      GHCompare diff = ghRepo.getCompare(pr.getBase().getSha(), pr.getHead().getSha());
+      GHCommit.File[] allFiles = diff.getFiles();
+      List allFilesList = Arrays.asList(allFiles);
 
-      return allFiles;
+      return allFilesList;
     }
 
     private boolean checkCommitPaths(String repositoryPath, List<File> allFiles)
